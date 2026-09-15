@@ -1,0 +1,5 @@
+install reqs
+#openfoodfacts API
+pip -m pip install opencv-python
+python -m pip install requests
+
