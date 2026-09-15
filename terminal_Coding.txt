@@ -1,0 +1,390 @@
+mkdir file-Name  // create an empty folder
+python3 -m venv .venv  // create isolated python environement
+ls -la	// show hidden files and directories (will show the environment)
+source .venv/bin/activate	// activate the virtual environment
+touch file.py	//create a python file
+nano file.py		// open a python file in the terminal\
+//	cat file.py will show the contents of a python file w/out opening it
+python file.py		// run the program
+
+-------------Current code example----------------------
+def main():				// create function called main (does not have to be called main)
+    app_name = "Food & Drink Scanner"	// variable
+    
+    print(app_name)
+    print("--------------------")
+    
+#    name = input("What is your name? ")	//asks for user input
+    answer = input("Would you like to start the scanner (y/n)?  ")	// ask user if they want to run
+    
+    if answer == "y":	// look at user input for y or n
+    	print("Scanner starting...")
+    else:
+    	print("Scanner stopped.")
+    
+#    print(f"Hello, {name}!")		// greets user by input name	called an "f-string"
+#    print("Scanner starting...")
+
+
+if __name__ == "__main__":		// Tells this file to run the following code if it is called
+    main()				// Calls the "main" function
+    
+--------actual phase 1 code-----------------
+def main():
+    print("Food & Drink Scanner")
+    print("--------------------")
+
+    barcode = input("Enter a barcode: ")
+
+    if barcode == "":
+        print("Error: No barcode entered.")
+        return
+
+    print()
+    print(f"Barcode received: {barcode}")
+
+
+if __name__ == "__main__":
+    main()
+
+
+------------Camera test code-------------
+import cv2
+
+
+def main():
+    camera = cv2.VideoCapture("/dev/video0")	#open camera
+
+    if not camera.isOpened():
+        print("Error: Could not open camera.")
+        return
+
+    print("Camera opened successfully.")
+    print("Press Q to quit.")
+
+    while True:
+        success, frame = camera.read()	# constant update of the current camera frame
+
+        if not success:
+            print("Error: Could not read frame.")
+            break
+
+        print(frame.shape)	#display frame data (height, width, color channels)
+
+        cv2.imshow("Food & Drink Scanner - Camera Test", frame)	# Displays latest frame
+
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
+
+    camera.release()	# stop using camera for this application
+    cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
+    
+    
+    
+------ set camera setting ------
+v4l2-ctl --device=/dev/video0   --set-fmt-video=width=1280,height=720,pixelformat=MJPG   --set-parm=30
+
+
+-----barcode test------
+import cv2
+
+
+def main():
+	camera = cv2.VideoCapture("/dev/video0", cv2.CAP_V4L2)
+	
+	# set camera properties
+	camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+	camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+	camera.set(cv2.CAP_PROP_FPS, 30)	# current camera keeps going to 5FPS
+
+	# display camera properties when program runs (Testing purposes)
+	print("Camera width:", camera.get(cv2.CAP_PROP_FRAME_WIDTH))
+	print("Camera height:", camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
+	print("Camera FPS:", camera.get(cv2.CAP_PROP_FPS))
+
+	if not camera.isOpened():
+		print("Error: Could not open camera.")
+		return
+
+	print("Camera opened successfully.")
+	print("Position a barcode about 6 - 12 inches from the camera.")
+	print("Press SPACE to capture an image.")
+	print("Press Q to quit.")
+
+	detector = cv2.barcode.BarcodeDetector()
+
+	while True:
+		success, frame = camera.read()
+
+		if not success:
+			print("Error: Could not read frame.")
+			break
+
+		cv2.imshow("Barcode Test", frame)
+
+		key = cv2.waitKey(1) & 0xFF
+
+		if key == ord("q"):
+			break
+		
+		# sets spacebar as the capture key
+		if key == ord(" "):
+			cv2.imwrite("barcode_test.jpg", frame)
+			print("Image saved as barcode_test.jpg")
+
+			barcode, points, straight_code = (
+				detector.detectAndDecode(frame)
+			)
+
+			if barcode:
+				print(f"Barcode detected: {barcode}")
+			else:
+				print("No barcode detected.")
+
+	camera.release()
+	cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+	main()
+	
+---- product_api code ----
+import requests
+
+def get_product(barcode):
+    url = f"https://world.openfoodfacts.org/api/v2/product/{barcode}"
+
+    headers = {
+        "User-Agent": "FoodDrinkScanner/1.0"
+    }
+
+    response = requests.get(url, headers=headers, timeout=10)
+
+    if response.status_code != 200:
+        print("Error: API request failed.")
+        print(f"HTTP status: {response.status_code}")
+        print(f"Response: {response.text[:500]}")
+        return None
+
+    data = response.json()
+
+    if data.get("status") != 1:
+        print("Product not found.")
+        return None
+
+    return data["product"]
+
+def main():
+    barcode = input("Scan or enter barcode: ")
+
+    product = get_product(barcode)
+
+    if product is None:
+        return
+
+    nutrients = product.get("nutriments", {})
+
+    print("\n" + "=" * 40)	# prints a blank line (\n) and then x number (40) of chars (=)
+    print("PRODUCT INFORMATION")
+    print("=" * 40)
+
+    print(f"Product:        {product.get('product_name', 'Unknown')}")
+    print(f"Brand:          {product.get('brands', 'Unknown')}")
+    print(f"Calories:       {nutrients.get('energy-kcal_100g', 'N/A')} kcal")
+    print(f"Protein:        {nutrients.get('proteins_100g', 'N/A')} g")
+    print(f"Carbohydrates:  {nutrients.get('carbohydrates_100g', 'N/A')} g")
+    print(f"Fat:            {nutrients.get('fat_100g', 'N/A')} g")
+    print(f"Sugars:         {nutrients.get('sugars_100g', 'N/A')} g")
+    print(f"Fiber:          {nutrients.get('fiber_100g', 'N/A')} g")
+
+    print("=" * 40)
+
+if __name__ == "__main__":
+    main()
+
+----- barcode scanner alpha ----
+import cv2
+from product_api import get_product, display_product
+
+def main():
+    camera = cv2.VideoCapture("/dev/video0", cv2.CAP_V4L2)
+
+    # Set camera properties
+    camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+    camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+    camera.set(cv2.CAP_PROP_FPS, 30)
+
+    # Display camera properties
+    print("Camera width:", camera.get(cv2.CAP_PROP_FRAME_WIDTH))
+    print("Camera height:", camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    print("Camera FPS:", camera.get(cv2.CAP_PROP_FPS))
+
+    if not camera.isOpened():
+        print("Error: Could not open camera.")
+        return
+
+    print("Camera opened successfully.")
+    print("Position a barcode about 6 - 12 inches from the camera.")
+    print("Press SPACE to scan.")
+    print("Press Q to quit.")
+
+    detector = cv2.barcode.BarcodeDetector()
+
+    while True:
+        success, frame = camera.read()
+
+        if not success:
+            print("Error: Could not read frame.")
+            break
+
+        cv2.imshow("Barcode Scanner", frame)
+
+        key = cv2.waitKey(1) & 0xFF
+
+        if key == ord("q"):
+            break
+
+        # Spacebar scans the current frame
+        if key == ord(" "):
+
+            cv2.imwrite("barcode_test.jpg", frame)
+            print("\nImage saved as barcode_test.jpg")
+
+            barcode, points, straight_code = (
+                detector.detectAndDecode(frame)
+            )
+
+            if barcode:
+                print(f"Barcode detected: {barcode}")
+                print("Looking up product...")
+
+                product = get_product(barcode)
+
+                if product is None:
+                    print("Could not retrieve product information")
+                    continue
+                display_product(product)
+
+                print("\nReady for another scan.")
+
+            else:
+                print("No barcode detected.")
+
+    camera.release()
+    cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
+    
+    
+---- product_api.py v2 ----
+import cv2
+import requests
+
+def get_product(barcode):
+	url = f"https://world.openfoodfacts.org/api/v2/product/{barcode}"
+
+	headers = {
+		"User-Agent": "FoodDrinkScanner/1.0"
+	}
+
+	response = requests.get(url, headers=headers, timeout=10)
+
+	if response.status_code != 200:
+		print("Error: API request failed.")
+		print(f"HTTP status: {response.status_code}")
+		print(f"Response: {response.text[:500]}")
+		return None
+
+	data = response.json()
+
+	if data.get("status") != 1:
+		print("Product not found.")
+		return None
+
+	return data["product"]
+
+def display_product(frame, product):
+	nutrients = product.get("nutriments", {})
+
+#	variables to display
+#    print("\n" + "=" * 40)
+#    print("PRODUCT INFORMATION")
+#    print("=" * 40)
+
+	product_name = product.get("product_name", "Unknown")
+	brand = product.get("brands", "Unknown")
+
+	calories = nutrients.get("energy-kcal_serving", "N/A")
+	protein = nutrients.get("proteins_serving", "N/A")
+	carbs = nutrients.get("carbohydrates_serving", "N/A")
+	fat = nutrients.get("fat_serving", "N/A")
+	sugars = nutrients.get("sugars_serving", "N/A")
+	fiber = nutrients.get("fiber_serving", "N/A")
+
+	lines = [
+		f"Product: {product_name}",
+		f"Brand: {brand}",
+		f"Calories: {calories} cal",
+		f"Protein: {protein} g",
+		f"Carbs: {carbs} g",
+		f"Fat: {fat} g",
+		f"Sugars: {sugars} g",
+		f"Fiber: {fiber} g",
+	]
+
+	overlay = frame.copy()
+
+	cv2.rectangle(
+		overlay,
+		(30,30),
+		(750, 430),
+		(0,0,0),
+		-1
+	)
+
+	frame = cv2.addWeighted(overlay, 0.75, frame, 0.25, 0)
+
+	y = 70
+
+	for i, line in enumerate(lines):
+		if i == 0:
+			color = (0, 255, 0)
+			scale = 0.9
+			thickness = 2
+		else:
+			color = (255,255,255)
+			scale = 0.65
+			thickness = 1
+		cv2.putText(
+			frame,
+			line,
+			(50, y),
+			cv2.FONT_HERSHEY_SIMPLEX,
+			scale,
+			color,
+			thickness,
+			cv2.LINE_AA
+		)
+
+		y += 38
+	return frame
+
+#    print("=" * 40)
+
+def main():
+	barcode = input("Scan or enter barcode: ")
+
+	product = get_product(barcode)
+
+	if product is None:
+		return
+
+if __name__ == "__main__":
+	main()
+
