@@ -1,6 +1,7 @@
 TODO:
 	shell for install requirements
 	put into Git
+	check for food or drink and reject all other tags
 	create basic automated test
 	ci/cd pipeline
 	swap from on camera facts (create on screen text for barcode/no barcode) to page
@@ -10,7 +11,7 @@ TODO:
 	calorie limit based on user data (find out what data is needed/useful)
 		bio sex
 		weight
-		height
+		heightdon
 		age?
 		user goals (lose / gain / maintain)
 	set limit based on healthy weight loss/gain numbers (lbs per week or the like)
