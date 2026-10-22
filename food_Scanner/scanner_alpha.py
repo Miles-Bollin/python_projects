@@ -1,5 +1,9 @@
 import cv2
 from product_api import get_product, display_product
+from product_classification import (
+	classify_product,
+	get_classification_message,
+)
 
 def main():
 	camera = cv2.VideoCapture("/dev/video0", cv2.CAP_V4L2)
@@ -58,14 +62,25 @@ def main():
 				print(f"Barcode detected: {barcode}")
 				print("Looking up product...")
 
-				product = get_product(barcode)
+				candidate_product = get_product(barcode)
 
-				if product is None:
-					print("Could not retrieve product information")
+				if candidate_product is None:
+					product = None
+					print(get_classification_message(None))
 					continue
-#				display_product(product)
-				print(f"Product: {product.get('product_name', 'Uknown')}")
+
+				classification = classify_product(candidate_product)
+				print(get_classification_message(candidate_product))
+
+				if classification not in {"FOOD", "DRINK"}:
+					product = None
+					continue
+
+				product = candidate_product
+
+				print(f"Product: {product.get('product_name', 'Unknown')}")
 				print("\nReady for another scan.")
+#				display_product(product)
 
 			else:
 				print("No barcode detected.")
