@@ -35,7 +35,7 @@ jobs:
         working-directory: food_Scanner
 
       - name: Check Python syntax
-        run:
+        run: |
           python -m py_compile scanner_alpha.py
           python -m py_compile product_api.py
           python -m py_compile product_classification.py
