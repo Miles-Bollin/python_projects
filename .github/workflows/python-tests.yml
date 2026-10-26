@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run:
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
+          python -m pip install -r food_Scanner/requirements.txt
 
       - name: Run classification tests
         run: python -m unittest -v test_prod_class.py
