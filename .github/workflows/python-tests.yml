@@ -32,9 +32,11 @@ jobs:
 
       - name: Run classification tests
         run: python -m unittest -v test_prod_class.py
+        working-directory: food_Scanner
 
       - name: Check Python syntax
         run:
           python -m py_compile scanner_alpha.py
           python -m py_compile product_api.py
           python -m py_compile product_classification.py
+        working-directory: food_Scanner
